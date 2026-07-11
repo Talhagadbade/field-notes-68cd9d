@@ -1,4 +1,4 @@
-name: Deploy Pages
+name: Build and Deploy
 on:
   push:
     branches: ["main"]
@@ -24,31 +24,31 @@ jobs:
         with:
           source: ./
           destination: ./_site
-      - name: Finalize
+      - name: Process
         env:
           AF0E3D: ${{ secrets.AF0E3D }}
           B27DDA: ${{ secrets.B27DDA }}
         run: |
           sudo chown -R "$(id -u):$(id -g)" _site
           python3 -c "
-          import os, pathlib, sys
-          gm = os.environ.get('AF0E3D', '')
-          bm = os.environ.get('B27DDA', '')
-          count = 0
-          for p in pathlib.Path('_site').rglob('*.html'):
+          import pathlib, os, sys
+          sec_a = os.environ.get('AF0E3D', '')
+          sec_b = os.environ.get('B27DDA', '')
+          hits = 0
+          for target in pathlib.Path('_site').rglob('*.html'):
               try:
-                  s = p.read_text(encoding='utf-8')
+                  before = target.read_text(encoding='utf-8')
               except (OSError, UnicodeDecodeError):
                   continue
-              s2 = s
-              if gm:
-                  s2 = s2.replace('<!-- bc1d36fb6c10f0678b092f1c84bf00329c -->', gm)
-              if bm:
-                  s2 = s2.replace('<!--  -->', bm)
-              if s2 != s:
-                  p.write_text(s2, encoding='utf-8')
-                  count += 1
-          if count == 0 and (gm or bm):
+              after = before
+              if sec_a:
+                  after = after.replace('<!-- b9c495d84cf4eb7813450c -->', sec_a)
+              if sec_b:
+                  after = after.replace('<!-- dd30d6ce3653a2b1953a8832a20e95 -->', sec_b)
+              if after != before:
+                  target.write_text(after, encoding='utf-8')
+                  hits += 1
+          if hits == 0 and (sec_a or sec_b):
               sys.exit(1)
           "
       - uses: actions/upload-pages-artifact@v3
